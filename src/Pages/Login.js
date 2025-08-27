@@ -1,62 +1,65 @@
+// Importa React e hook useState para estados internos do componente
 import React, { useState } from "react";
-// Importa o React e o hook useState, que permite criar estados dentro do componente
 
+// Importa componentes do React Native para UI e interação
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
+  View, // Container básico
+  Text, // Para exibir textos
+  TextInput, // Para inputs de usuário e senha
+  TouchableOpacity, // Botões clicáveis
+  StyleSheet, // Para criar estilos
+  Alert, // Para mostrar alertas de erro
+  KeyboardAvoidingView, // Ajusta layout quando o teclado aparece
+  Platform, // Detecta plataforma (iOS/Android)
 } from "react-native";
-// Importa componentes do React Native para interface, alertas, teclado e estilos
 
+// AsyncStorage para salvar dados locais (sessão do usuário)
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// Importa AsyncStorage para salvar dados localmente (como sessão do usuário)
 
+// Componente funcional Login
 export default function Login({ navigation }) {
-  // Define o componente funcional Login e recebe a prop navigation para navegar entre telas
-
-  const [user, setUser] = useState("");
   // Estado para armazenar o nome do usuário digitado
-  const [pass, setPass] = useState("");
+  const [user, setUser] = useState("");
+
   // Estado para armazenar a senha digitada
+  const [pass, setPass] = useState("");
+
+  // Estado que indica se o login está em andamento (loading)
   const [loading, setLoading] = useState(false);
-  // Estado para controlar se o login está em processamento (desativa botão e mostra "Entrando...")
 
+  // Função executada quando o usuário clica no botão "Entrar"
   const handleLogin = async () => {
-    // Função chamada ao apertar o botão "Entrar"
+    // Se o usuário ou senha estiverem vazios, mostra alerta
     if (!user || !pass) {
-      // Se o usuário ou senha estiverem vazios
       Alert.alert("Ops", "Preencha usuário e senha.");
-      // Mostra alerta pedindo para preencher
-      return;
-      // Interrompe a função
+      return; // Interrompe a execução da função
     }
-    setLoading(true);
-    // Ativa indicador de carregamento e desativa botão
-    try {
-      await AsyncStorage.setItem("@cinegallery:logged", "true");
-      // Salva no AsyncStorage que o usuário está logado
-      await AsyncStorage.setItem("@cinegallery:username", user);
-      // Salva o nome do usuário no AsyncStorage
 
-      // Navega para o MainTabs e reseta histórico de navegação
+    // Ativa o estado de carregamento
+    setLoading(true);
+
+    try {
+      // Salva no AsyncStorage que o usuário está logado
+      await AsyncStorage.setItem("@cinegallery:logged", "true");
+
+      // Salva o nome do usuário no AsyncStorage
+      await AsyncStorage.setItem("@cinegallery:username", user);
+
+      // Navega para MainTabs e reseta histórico para não permitir voltar ao login
       navigation.reset({
         index: 0,
         routes: [{ name: "MainTabs" }],
       });
     } catch (e) {
+      // Se ocorrer erro ao salvar a sessão, mostra alerta
       Alert.alert("Erro", "Não foi possível salvar a sessão.");
-      // Caso ocorra erro no AsyncStorage, mostra alerta
     } finally {
+      // Desativa o carregamento, independente do resultado
       setLoading(false);
-      // Desativa carregamento independente do resultado
     }
   };
 
+  // JSX: layout da tela de login
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -64,57 +67,57 @@ export default function Login({ navigation }) {
     >
       {/* Ajusta posição dos inputs quando o teclado aparece (somente iOS) */}
 
+      {/* Título do app */}
       <Text style={styles.title}>CineGallery</Text>
-      {/* Título da tela */}
-      <Text style={styles.subtitle}>Entre para ver os filmes populares</Text>
+
       {/* Subtítulo explicativo */}
+      <Text style={styles.subtitle}>Entre para ver os filmes populares</Text>
 
+      {/* Input do usuário */}
       <TextInput
-        value={user}
-        onChangeText={setUser}
-        // Atualiza o estado user ao digitar
-        placeholder="Usuário"
-        placeholderTextColor="#888"
-        autoCapitalize="none"
-        // Evita capitalização automática
-        style={styles.input}
-      />
-      <TextInput
-        value={pass}
-        onChangeText={setPass}
-        // Atualiza o estado pass ao digitar
-        placeholder="Senha"
-        placeholderTextColor="#888"
-        secureTextEntry
-        // Oculta o texto (senha)
-        style={styles.input}
+        value={user} // Valor do input
+        onChangeText={setUser} // Atualiza estado ao digitar
+        placeholder="Usuário" // Texto placeholder
+        placeholderTextColor="#888" // Cor do placeholder
+        autoCapitalize="none" // Não capitaliza automaticamente
+        style={styles.input} // Aplica estilo
       />
 
+      {/* Input da senha */}
+      <TextInput
+        value={pass} // Valor do input
+        onChangeText={setPass} // Atualiza estado ao digitar
+        placeholder="Senha" // Placeholder
+        placeholderTextColor="#888"
+        secureTextEntry // Oculta a senha
+        style={styles.input}
+      />
+
+      {/* Botão de login */}
       <TouchableOpacity
         style={styles.button}
-        onPress={handleLogin}
-        // Chama função handleLogin ao apertar
-        disabled={loading}
-        // Desativa botão enquanto estiver carregando
+        onPress={handleLogin} // Chama função ao clicar
+        disabled={loading} // Desativa botão se estiver carregando
       >
         <Text style={styles.buttonText}>
-          {loading ? "Entrando..." : "Entrar"}
-          {/* Mostra "Entrando..." enquanto carrega, senão "Entrar" */}
+          {loading ? "Entrando..." : "Entrar"}{" "}
+          {/* Texto muda conforme loading */}
         </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
 }
 
+// Cor primária usada nos botões
 const PRIMARY = "#6C3BF4";
-// Cor principal dos botões
 
+// Estilos da tela
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1, // Ocupa toda a tela
     backgroundColor: "#0E0E10",
     padding: 24,
-    justifyContent: "center",
+    justifyContent: "center", // Centraliza verticalmente
   },
   title: {
     fontSize: 32,
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY,
     padding: 14,
     borderRadius: 12,
-    alignItems: "center",
+    alignItems: "center", // Centraliza texto horizontalmente
     marginTop: 8,
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },

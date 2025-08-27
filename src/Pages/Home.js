@@ -1,95 +1,87 @@
+// Importando React e hooks useEffect e useState
 import React, { useEffect, useState } from "react";
-// Importa React e os hooks:
-// useState -> para criar estados dentro do componente
-// useEffect -> para executar efeitos colaterais, como buscar dados ao carregar
 
+// Importando componentes do React Native
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-// Importa componentes do React Native:
-// View -> container de layout
-// Text -> exibição de texto
-// TouchableOpacity -> botão que reage ao toque
-// StyleSheet -> criação de estilos
 
+// Importando AsyncStorage para persistência de dados locais
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// Importa AsyncStorage para salvar e recuperar dados localmente (como sessão do usuário)
 
+// Componente principal da tela Home
 export default function Home({ navigation }) {
-  // Componente funcional Home
-  // Recebe a prop "navigation" para navegar entre telas do app
-
+  // Estado para armazenar o nome de usuário
   const [username, setUsername] = useState("");
-  // Cria estado "username" para armazenar o nome do usuário logado
-  // Inicialmente vazio
 
+  // Hook que executa quando o componente é montado
   useEffect(() => {
-    AsyncStorage.getItem("@cinegallery:username").then((v) => {
-      if (v) setUsername(v);
-      // Ao montar o componente, busca o nome do usuário no AsyncStorage
-      // Se existir, atualiza o estado "username"
-    });
-  }, []);
-  // Dependência vazia -> roda apenas uma vez, quando o componente é carregado
+    // Busca o nome do usuário salvo no AsyncStorage
+    AsyncStorage.getItem("@cinegallery:username").then(
+      (v) => v && setUsername(v) // Se existir, atualiza o estado username
+    );
+  }, []); // [] significa que executa apenas uma vez ao montar o componente
 
+  // Função para deslogar o usuário
   const logout = async () => {
-    // Função que realiza logout
     try {
+      // Remove as chaves de login e username do AsyncStorage
       await AsyncStorage.multiRemove([
         "@cinegallery:logged",
         "@cinegallery:username",
       ]);
-      // Remove do AsyncStorage os dados de login e usuário
 
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
-      // Navega para a tela Login e limpa o histórico de navegação
-      // Evita que o usuário volte para a Home pressionando o botão voltar
+      // Navegação: substitui a tela atual pelo Login
+      // getParent() pega o Stack Navigator pai, replace evita warning de RESET
+      navigation.getParent()?.replace("Login");
     } catch (e) {
-      console.log("Erro ao sair:", e);
-      // Caso ocorra erro ao limpar AsyncStorage, exibe no console
+      // Se der erro, apenas loga no console
+      console.log("Erro ao deslogar:", e);
     }
   };
 
+  // JSX que renderiza a tela
   return (
     <View style={styles.container}>
+      {/* Saudação com o nome do usuário, se houver */}
       <Text style={styles.title}>
         Bem-vindo{username ? `, ${username}` : ""} 👋
-        {/* Mostra "Bem-vindo, username" se houver username, senão apenas "Bem-vindo" */}
       </Text>
-      <Text style={styles.subtitle}>Pronto para maratonar?</Text>
-      {/* Subtítulo da tela */}
 
+      {/* Subtítulo */}
+      <Text style={styles.subtitle}>Pronto para maratonar?</Text>
+
+      {/* Botão para navegar para a galeria de filmes */}
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate("Gallery")}
-        // Navega para a tela Gallery ao tocar no botão
       >
         <Text style={styles.buttonText}>Ver Galeria de Filmes</Text>
       </TouchableOpacity>
 
+      {/* Botão de logout */}
       <TouchableOpacity
-        style={[styles.button, styles.secondary]}
-        onPress={logout}
+        style={[styles.button, styles.secondary]} // Aplica estilo secundário vermelho
+        onPress={logout} // Chama função logout ao clicar
       >
         <Text style={styles.buttonText}>Sair</Text>
-        {/* Botão vermelho para fazer logout */}
       </TouchableOpacity>
     </View>
   );
 }
 
-const PRIMARY = "#6C3BF4";
 // Cor primária utilizada nos botões
+const PRIMARY = "#6C3BF4";
 
+// Estilos da tela
 const styles = StyleSheet.create({
+  // Container principal da tela
   container: {
-    flex: 1,
+    flex: 1, // Ocupa toda a tela
     backgroundColor: "#0E0E10",
     padding: 24,
-    justifyContent: "center",
+    justifyContent: "center", // Centraliza verticalmente
   },
-  // Container principal ocupa toda a tela, com padding e fundo escuro
+
+  // Título de boas-vindas
   title: {
     fontSize: 28,
     fontWeight: "800",
@@ -97,24 +89,27 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: "center",
   },
-  // Estilo do título
+
+  // Subtítulo menor
   subtitle: {
     fontSize: 14,
     color: "#aaa",
     marginBottom: 20,
     textAlign: "center",
   },
-  // Estilo do subtítulo
+
+  // Botão principal
   button: {
     backgroundColor: PRIMARY,
     padding: 14,
     borderRadius: 12,
-    alignItems: "center",
+    alignItems: "center", // Centraliza o texto horizontalmente
     marginTop: 12,
   },
-  // Estilo dos botões principais
+
+  // Texto dentro do botão
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  // Estilo do texto dentro dos botões
+
+  // Botão secundário (vermelho) usado para logout
   secondary: { backgroundColor: "#ef4444" },
-  // Estilo do botão secundário (logout) com cor vermelha
 });
