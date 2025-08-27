@@ -1,53 +1,48 @@
-Perfeito! Vou criar um README detalhado para o **CineGallery**, incluindo **instalação, dependências, explicação de cada tela e linha de código relevante**, seguindo a formatação que o GitHub usa. Vou organizar por seções claras, do setup até o funcionamento interno do app.
-
----
-
-# **CineGallery – App de Filmes**
-
-## Nome:
+CineGallery – App de Filmes
+Nome:
 
 Yuri Kaynan
-**Data**: 27/08/2025
+Data: 27/08/2025
 
----
+Introdução
 
-## Introdução
+O CineGallery é um aplicativo desenvolvido em React Native, que simula uma galeria de filmes, permitindo:
 
-O **CineGallery** é um aplicativo desenvolvido em **React Native**, que simula uma galeria de filmes, permitindo:
+Login persistente.
 
-* Login persistente.
-* Visualização de filmes populares e recomendados.
-* Pesquisa de filmes.
-* Gerenciamento de favoritos.
+Visualização de filmes populares e recomendados.
 
-O objetivo é aplicar conhecimentos de **programação para dispositivos móveis**, integração com APIs externas, navegação entre telas e persistência de dados locais.
+Pesquisa de filmes.
 
----
+Gerenciamento de favoritos.
 
-## Contextualização
+O objetivo é aplicar conhecimentos de programação para dispositivos móveis, integração com APIs externas, navegação entre telas e persistência de dados locais.
 
-O projeto foi concebido como protótipo funcional para aprendizado da disciplina **Programação para Dispositivos Móveis**, permitindo prática com:
+Contextualização
 
-* React Native (componentes nativos e hooks)
-* AsyncStorage (persistência de sessão e favoritos)
-* React Navigation (Stack Navigator + Bottom Tabs)
-* Consumo da API OMDb (filmes e imagens)
-* Design responsivo e interação com ícones (Ionicons)
+O projeto foi concebido como protótipo funcional para aprendizado da disciplina Programação para Dispositivos Móveis, permitindo prática com:
 
----
+React Native (componentes nativos e hooks)
 
-## Requisitos do Ambiente
+AsyncStorage (persistência de sessão e favoritos)
 
-1. **Node.js** e **npm** ou **yarn**
-2. **Expo CLI** (para facilitar execução em Android/iOS)
-3. Editor de código, como **VS Code**
-4. Conexão à internet (para instalar dependências e consumir API)
+React Navigation (Stack Navigator + Bottom Tabs)
 
----
+Consumo da API OMDb (filmes e imagens)
 
-## Instalação de Dependências
+Design responsivo e interação com ícones (Ionicons)
 
-```bash
+Requisitos do Ambiente
+
+Node.js e npm ou yarn
+
+Expo CLI (para facilitar execução em Android/iOS)
+
+Editor de código, como VS Code
+
+Conexão à internet (para instalar dependências e consumir API)
+
+Instalação de Dependências
 # Criação do projeto com Expo
 expo init CineGallery
 cd CineGallery
@@ -61,19 +56,19 @@ npm install react-native-screens react-native-safe-area-context
 npm install @react-native-async-storage/async-storage
 npm install axios
 npm install react-native-vector-icons
-```
 
-* `@react-navigation/native` e `native-stack`: para navegação entre telas
-* `bottom-tabs`: para a navegação por abas na Home
-* `async-storage`: para salvar dados localmente (sessão e favoritos)
-* `axios`: para realizar requisições HTTP na API OMDb
-* `vector-icons`: para ícones de navegação e botões
 
----
+@react-navigation/native e native-stack: para navegação entre telas
 
-## Estrutura de Pastas
+bottom-tabs: para a navegação por abas na Home
 
-```
+async-storage: para salvar dados localmente (sessão e favoritos)
+
+axios: para realizar requisições HTTP na API OMDb
+
+vector-icons: para ícones de navegação e botões
+
+Estrutura de Pastas
 CineGallery/
 │
 ├─ src/
@@ -86,114 +81,104 @@ CineGallery/
 │
 ├─ App.js
 └─ package.json
-```
 
-* Cada tela é um **componente React Native**.
-* `App.js` é o ponto de entrada, responsável pela navegação inicial e verificação de login.
 
----
+Cada tela é um componente React Native.
 
-## Explicação de Cada Tela
+App.js é o ponto de entrada, responsável pela navegação inicial e verificação de login.
 
-### 1. Onboarding.js
+Explicação de Cada Tela
+1. Onboarding.js
 
 Objetivo: Apresentar o app ao usuário na primeira execução.
 
-```js
 const finishOnboarding = async () => {
   await AsyncStorage.setItem("hasSeenOnboarding", "true");
   // Salva que o usuário já passou pelo onboarding
   navigation.replace("Login");
   // Redireciona para Login substituindo a tela atual
 };
-```
 
-* `AsyncStorage` salva um valor booleano `hasSeenOnboarding`.
-* `navigation.replace` impede que o usuário volte para onboarding com o botão de voltar.
 
----
+AsyncStorage salva um valor booleano hasSeenOnboarding.
 
-### 2. Login.js
+navigation.replace impede que o usuário volte para onboarding com o botão de voltar.
+
+2. Login.js
 
 Objetivo: Receber credenciais do usuário e salvar sessão.
 
-```js
 await AsyncStorage.setItem("@cinegallery:logged", "true");
 await AsyncStorage.setItem("@cinegallery:username", user);
 // Salva sessão e nome do usuário
 navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
 // Redireciona para as abas principais e limpa histórico de navegação
-```
 
-* `useState` controla valores dos inputs.
-* `KeyboardAvoidingView` ajusta inputs ao teclado (iOS).
-* Validação simples: qualquer usuário/senha não vazios é aceito.
 
----
+useState controla valores dos inputs.
 
-### 3. Home.js
+KeyboardAvoidingView ajusta inputs ao teclado (iOS).
+
+Validação simples: qualquer usuário/senha não vazios é aceito.
+
+3. Home.js
 
 Objetivo: Tela principal após login.
 
-```js
 useEffect(() => {
   AsyncStorage.getItem("@cinegallery:username").then(
     (v) => v && setUsername(v)
   );
 }, []);
-```
 
-* Recupera nome do usuário do AsyncStorage para mostrar boas-vindas.
 
-```js
+Recupera nome do usuário do AsyncStorage para mostrar boas-vindas.
+
 const logout = async () => {
   await AsyncStorage.multiRemove(["@cinegallery:logged", "@cinegallery:username"]);
   navigation.getParent()?.replace("Login");
 };
-```
 
-* Remove dados de sessão.
 
-* `getParent()?.replace` corrige o erro de `RESET` e envia o usuário para Login.
+Remove dados de sessão.
 
-* Botões:
+getParent()?.replace corrige o erro de RESET e envia o usuário para Login.
 
-  * "Ver Galeria de Filmes": navega para `Gallery`.
-  * "Sair": remove sessão.
+Botões:
 
----
+"Ver Galeria de Filmes": navega para Gallery.
 
-### 4. Gallery.js
+"Sair": remove sessão.
+
+4. Gallery.js
 
 Objetivo: Exibir filmes populares, pesquisa e favoritos.
 
-```js
 const fetchMovies = async (q) => {
   const r = await axios.get(`https://www.omdbapi.com/?s=${q}&type=movie&apikey=${API_KEY}`);
   setMovies(r.data.Search || []);
 };
-```
 
-* `axios.get` consome a OMDb API.
-* `FlatList` exibe filmes em grid responsivo.
-* Botão de favoritar:
 
-```js
+axios.get consome a OMDb API.
+
+FlatList exibe filmes em grid responsivo.
+
+Botão de favoritar:
+
 <TouchableOpacity onPress={() => toggleFavorite(item)}>
   <Ionicons name={isFavorited(item) ? "star" : "star-outline"} />
 </TouchableOpacity>
-```
 
-* Verifica se o filme já está favoritado e altera o ícone dinamicamente.
-* Função `toggleFavorite` adiciona ou remove o filme do AsyncStorage.
 
----
+Verifica se o filme já está favoritado e altera o ícone dinamicamente.
 
-### 5. Favoritos.js
+Função toggleFavorite adiciona ou remove o filme do AsyncStorage.
+
+5. Favoritos.js
 
 Objetivo: Listar filmes favoritados.
 
-```js
 useFocusEffect(
   React.useCallback(() => {
     const loadFavorites = async () => {
@@ -203,18 +188,16 @@ useFocusEffect(
     loadFavorites();
   }, [])
 );
-```
 
-* `useFocusEffect` atualiza a lista sempre que a tela recebe foco.
-* Botão "Remover" remove o filme da lista e atualiza o AsyncStorage.
 
----
+useFocusEffect atualiza a lista sempre que a tela recebe foco.
 
-## App.js
+Botão "Remover" remove o filme da lista e atualiza o AsyncStorage.
+
+App.js
 
 Objetivo: Configura navegação inicial e roteamento principal.
 
-```js
 const [initialRoute, setInitialRoute] = useState(null);
 
 useEffect(() => {
@@ -224,46 +207,43 @@ useEffect(() => {
   };
   checkLogin();
 }, []);
-```
 
-* Verifica se o usuário já passou pelo onboarding e/ou está logado.
 
-```js
+Verifica se o usuário já passou pelo onboarding e/ou está logado.
+
 <Stack.Navigator initialRouteName={initialRoute}>
   <Stack.Screen name="Onboarding" component={Onboarding} />
   <Stack.Screen name="Login" component={Login} />
   <Stack.Screen name="MainTabs" component={MainTabs} />
   <Stack.Screen name="Gallery" component={Gallery} />
 </Stack.Navigator>
-```
 
-* `Stack.Navigator` controla telas de navegação.
-* `MainTabs` é o **Bottom Tab Navigator** com `Home` e `Favoritos`.
 
----
+Stack.Navigator controla telas de navegação.
 
-## Funcionalidades Principais
+MainTabs é o Bottom Tab Navigator com Home e Favoritos.
 
-* Persistência de login com AsyncStorage
-* Onboarding exibido apenas na primeira abertura
-* Pesquisa e recomendação de filmes
-* Favoritar e remover filmes, atualizando ícones dinamicamente
-* Interface dark mode responsiva
-* Navegação segura entre Stack e Tabs
+Funcionalidades Principais
 
----
+Persistência de login com AsyncStorage
 
-## Observações Finais
+Onboarding exibido apenas na primeira abertura
 
-Este projeto serve como **protótipo funcional** e **material de estudo**, demonstrando boas práticas em **React Native** e integração com serviços web.
+Pesquisa e recomendação de filmes
+
+Favoritar e remover filmes, atualizando ícones dinamicamente
+
+Interface dark mode responsiva
+
+Navegação segura entre Stack e Tabs
+
+Observações Finais
+
+Este projeto serve como protótipo funcional e material de estudo, demonstrando boas práticas em React Native e integração com serviços web.
 O código é modular, comentado e preparado para futuras expansões, como:
 
-* Tela de detalhes do filme
-* Busca avançada
-* Integração com backend
+Tela de detalhes do filme
 
----
+Busca avançada
 
-Se você quiser, posso criar **uma versão ainda mais visual**, com **prints das telas, diagramas de fluxo de navegação e exemplos de JSON da API**, deixando o README parecido com projetos profissionais de apps no GitHub.
-
-Quer que eu faça essa versão também?
+Integração com backend
