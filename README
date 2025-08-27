@@ -1,9 +1,4 @@
-Perfeitamente, Yuri! 😄
-Aqui está um **README.md** completo para o seu projeto **CineGallery**, explicando o app, as funcionalidades, estrutura de código e dependências. Você pode copiar direto para o seu repositório no GitHub:
-
----
-
-# CineGallery
+#CineGallery
 
 🎬 **CineGallery** é um aplicativo de galeria de filmes desenvolvido em **React Native**, que permite aos usuários navegar pelos filmes mais populares, favoritar seus filmes preferidos e manter uma sessão persistente. O app também inclui um onboarding inicial para novos usuários.
 
@@ -197,9 +192,3 @@ https://www.omdbapi.com/?s=batman&type=movie&page=1&apikey=882fa1a2
 ## 📝 Autor
 
 * **Yuri** – Desenvolvedor do CineGallery
-
----
-
-Se você quiser, posso também gerar **uma versão resumida do README** já pronta para **copiar e colar no GitHub**, incluindo **todas as dependências e comandos para rodar o projeto**.
-
-Quer que eu faça essa versão pronta?
