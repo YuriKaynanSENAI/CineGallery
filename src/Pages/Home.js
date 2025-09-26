@@ -1,115 +1,103 @@
-// Importando React e hooks useEffect e useState
+// src/Pages/Home.js
+// Tela inicial que cumprimenta o usuário e permite navegar para Gallery ou fazer logout.
+
 import React, { useEffect, useState } from "react";
+// Importa React e hooks (estado e efeito)
 
-// Importando componentes do React Native
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
+// Importa componentes do RN: View, StyleSheet, TouchableOpacity
 
-// Importando AsyncStorage para persistência de dados locais
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+// Importa hook de navegação para controlar navegação entre telas
 
-// Componente principal da tela Home
-export default function Home({ navigation }) {
-  // Estado para armazenar o nome de usuário
+import TextComp from "../components/TextComp";
+// Componente de texto padronizado
+
+import { getUsername, clearSession } from "../components/AsyncStorage";
+// Helpers: pegar o username e limpar sessão (logout)
+
+const Home = () => {
+  // Componente funcional da tela Home
   const [username, setUsername] = useState("");
+  // Estado local para armazenar o nome do usuário
 
-  // Hook que executa quando o componente é montado
+  const navigation = useNavigation();
+  // Obtém o objeto de navegação (navigate, replace, etc)
+
   useEffect(() => {
-    // Busca o nome do usuário salvo no AsyncStorage
-    AsyncStorage.getItem("@cinegallery:username").then(
-      (v) => v && setUsername(v) // Se existir, atualiza o estado username
-    );
-  }, []); // [] significa que executa apenas uma vez ao montar o componente
+    // Ao montar, carrega o nome do usuário do armazenamento
+    const loadUser = async () => {
+      const name = await getUsername();
+      // Chama getUsername (pode ser null)
+      setUsername(name || "Usuário");
+      // Define o nome no estado, fallback para "Usuário" se null/undefined
+    };
+    loadUser();
+    // Executa a função assíncrona de carregamento
+  }, []);
 
-  // Função para deslogar o usuário
-  const logout = async () => {
-    try {
-      // Remove as chaves de login e username do AsyncStorage
-      await AsyncStorage.multiRemove([
-        "@cinegallery:logged",
-        "@cinegallery:username",
-      ]);
-
-      // Navegação: substitui a tela atual pelo Login
-      // getParent() pega o Stack Navigator pai, replace evita warning de RESET
-      navigation.getParent()?.replace("Login");
-    } catch (e) {
-      // Se der erro, apenas loga no console
-      console.log("Erro ao deslogar:", e);
-    }
+  const handleLogout = async () => {
+    // Função de logout chamada ao pressionar "Sair"
+    await clearSession();
+    // Limpa as chaves de sessão (LOGGED e USERNAME)
+    navigation.replace("Login");
+    // Substitui a tela atual pela tela de Login (impede voltar)
   };
 
-  // JSX que renderiza a tela
   return (
+    // JSX da tela Home
     <View style={styles.container}>
-      {/* Saudação com o nome do usuário, se houver */}
-      <Text style={styles.title}>
-        Bem-vindo{username ? `, ${username}` : ""} 👋
-      </Text>
+      <TextComp variant="title" style={styles.title}>
+        Bem-vindo, {username}!{/* Exibe o nome carregado dinamicamente */}
+      </TextComp>
 
-      {/* Subtítulo */}
-      <Text style={styles.subtitle}>Pronto para maratonar?</Text>
-
-      {/* Botão para navegar para a galeria de filmes */}
       <TouchableOpacity
-        style={styles.button}
+        style={styles.btn}
         onPress={() => navigation.navigate("Gallery")}
+        // Navega para a tela "Gallery" ao pressionar
       >
-        <Text style={styles.buttonText}>Ver Galeria de Filmes</Text>
+        <TextComp color="#fff">Ver Galeria de Filmes</TextComp>
       </TouchableOpacity>
 
-      {/* Botão de logout */}
-      <TouchableOpacity
-        style={[styles.button, styles.secondary]} // Aplica estilo secundário vermelho
-        onPress={logout} // Chama função logout ao clicar
-      >
-        <Text style={styles.buttonText}>Sair</Text>
+      <TouchableOpacity style={styles.btnLogout} onPress={handleLogout}>
+        {/* Botão de logout que chama handleLogout */}
+        <TextComp color="#fff">Sair</TextComp>
       </TouchableOpacity>
     </View>
   );
-}
+};
 
-// Cor primária utilizada nos botões
-const PRIMARY = "#6C3BF4";
-
-// Estilos da tela
 const styles = StyleSheet.create({
-  // Container principal da tela
+  // Estilos da Home
   container: {
-    flex: 1, // Ocupa toda a tela
-    backgroundColor: "#0E0E10",
-    padding: 24,
-    justifyContent: "center", // Centraliza verticalmente
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 20,
   },
-
-  // Título de boas-vindas
   title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#fff",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-
-  // Subtítulo menor
-  subtitle: {
-    fontSize: 14,
-    color: "#aaa",
     marginBottom: 20,
-    textAlign: "center",
   },
-
-  // Botão principal
-  button: {
-    backgroundColor: PRIMARY,
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center", // Centraliza o texto horizontalmente
-    marginTop: 12,
+  btn: {
+    marginTop: 15,
+    backgroundColor: "#3498db",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
   },
-
-  // Texto dentro do botão
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-
-  // Botão secundário (vermelho) usado para logout
-  secondary: { backgroundColor: "#ef4444" },
+  btnLogout: {
+    marginTop: 10,
+    backgroundColor: "#e74c3c",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
+  },
 });
+
+export default Home;
+// Exporta o componente Home

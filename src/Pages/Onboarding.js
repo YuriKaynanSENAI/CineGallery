@@ -1,80 +1,79 @@
-// Importa React
+// src/Pages/Onboarding.js
+// Tela inicial de boas-vindas com botão para começar (marca usuário como 'visto' e vai para Login).
+
 import React from "react";
+// Importa React (não há estado local aqui)
 
-// Importa componentes básicos do React Native
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-// View: container
-// Text: para exibir textos
-// TouchableOpacity: botão clicável
-// StyleSheet: criar estilos
+import { View, StyleSheet, TouchableOpacity } from "react-native";
+// Importa View, StyleSheet e TouchableOpacity para o botão
 
-// AsyncStorage para salvar localmente se o usuário já viu o onboarding
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import TextComp from "../components/TextComp";
+// Componente de texto padronizado
 
-// Componente funcional Onboarding
-export default function Onboarding({ navigation }) {
-  // navigation: usado para navegar entre telas
+import { useNavigation } from "@react-navigation/native";
+// Hook de navegação para redirecionar após começar
 
-  // Função chamada quando o usuário termina o onboarding
-  const finishOnboarding = async () => {
-    // Salva no AsyncStorage que o usuário já viu o onboarding
-    await AsyncStorage.setItem("hasSeenOnboarding", "true");
+import { setLogged } from "../components/AsyncStorage";
+// Helper para marcar que o onboarding foi visto (reaproveita a flag de logged)
 
-    // Navega para a tela Login, substituindo a tela atual
-    // (não permite voltar para o onboarding com o botão de voltar)
+const Onboarding = () => {
+  // Componente funcional do Onboarding
+  const navigation = useNavigation();
+  // Obtém objeto de navegação
+
+  const handleStart = async () => {
+    // Função executada ao pressionar "Começar"
+    await setLogged(true);
+    // Marca o usuário como 'logado' (ou como que o app usa para pular telas)
     navigation.replace("Login");
+    // Navega para a tela Login substituindo a atual
   };
 
-  // JSX: layout do onboarding
   return (
+    // JSX do Onboarding
     <View style={styles.container}>
-      {/* Título de boas-vindas */}
-      <Text style={styles.title}>🎬 Bem-vindo ao CineGallery!</Text>
+      <TextComp variant="title" style={styles.title}>
+        Bem-vindo ao CineGallery
+      </TextComp>
 
-      {/* Subtítulo explicativo */}
-      <Text style={styles.subtitle}>
-        Explore milhares de filmes, salve seus favoritos e aproveite a magia do
-        cinema.
-      </Text>
+      <TextComp variant="body" style={styles.subtitle}>
+        Explore filmes, descubra novas histórias e monte sua lista de favoritos!
+      </TextComp>
 
-      {/* Botão para finalizar onboarding */}
-      <TouchableOpacity style={styles.button} onPress={finishOnboarding}>
-        <Text style={styles.buttonText}>Começar</Text>
+      <TouchableOpacity style={styles.btn} onPress={handleStart}>
+        <TextComp color="#fff">Começar</TextComp>
       </TouchableOpacity>
     </View>
   );
-}
+};
 
-// Estilos da tela
 const styles = StyleSheet.create({
+  // Estilos do Onboarding
   container: {
-    flex: 1, // Ocupa toda a tela
-    justifyContent: "center", // Centraliza verticalmente
-    alignItems: "center", // Centraliza horizontalmente
-    backgroundColor: "#1a1a2e",
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     padding: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 20,
+    marginBottom: 15,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#aaa",
-    marginBottom: 40,
+    marginBottom: 25,
     textAlign: "center",
   },
-  button: {
-    backgroundColor: "#6c5ce7",
-    padding: 15,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
+  btn: {
+    marginTop: 15,
+    backgroundColor: "#3498db",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
   },
 });
+
+export default Onboarding;
+// Exporta o componente Onboarding

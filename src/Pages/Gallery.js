@@ -1,321 +1,180 @@
-// Importa React e hooks useEffect (efeitos colaterais) e useState (estado)
+// src/Pages/Gallery.js
+// Tela que busca filmes da API (OMDb) e permite favoritar/desfavoritar.
+
 import React, { useEffect, useState } from "react";
+// Importa React e hooks (estado e efeito)
 
-// Importa componentes visuais do React Native
 import {
-  View, // contêiner básico
-  Text, // exibir textos
-  TextInput, // campo de busca
-  TouchableOpacity, // botão clicável
-  FlatList, // lista performática para exibir filmes
-  Image, // exibir imagens dos pôsteres
-  ActivityIndicator, // indicador de carregamento (spinner)
-  StyleSheet, // estilização
-  Dimensions, // pega dimensões da tela para calcular grid
+  View,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
+// Importa componentes do RN:
+// View, FlatList, StyleSheet, ActivityIndicator (spinner), TouchableOpacity
 
-// Biblioteca para chamadas HTTP
-import axios from "axios";
+import TextComp from "../components/TextComp";
+// Texto padronizado
 
-// Para salvar/buscar/remover favoritos localmente
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import MovieCard from "../components/MovieCard";
+// Card de filme reutilizável
 
-// Ícones (estrela de favoritos)
-import { Ionicons } from "@expo/vector-icons";
+import {
+  addFavorite,
+  removeFavoriteById,
+  isFavorite,
+} from "../components/AsyncStorage";
+// Importa helpers de favoritos: adicionar, remover e checar se é favorito
 
-// useFocusEffect: executa quando a tela entra em foco
-import { useFocusEffect } from "@react-navigation/native";
+// URL da API pública (exemplo) — faz busca por "batman" com chave pública
+const API_URL = "https://www.omdbapi.com/?apikey=thewdb&s=batman";
 
-// Chave da API do OMDB (OMDb API)
-const API_KEY = "882fa1a2";
-
-// Imagem de fallback caso não exista pôster
-const POSTER_FALLBACK = "https://via.placeholder.com/300x450?text=No+Image";
-
-// Componente principal da tela de galeria
-export default function Gallery() {
-  // Estado para guardar texto digitado na busca
-  const [query, setQuery] = useState("");
-
-  // Lista de filmes buscados
+const Gallery = () => {
+  // Componente funcional da galeria de filmes
   const [movies, setMovies] = useState([]);
-
-  // Controle de loading (exibir spinner enquanto carrega filmes)
+  // Estado que armazena os filmes buscados
   const [loading, setLoading] = useState(true);
+  // Estado que controla o indicador de carregamento
+  const [favIds, setFavIds] = useState([]);
+  // Estado que guarda os imdbIDs que estão favoritados (array de strings)
 
-  // Mensagem de erro (se falhar a busca)
-  const [err, setErr] = useState("");
-
-  // Guarda ids dos filmes que já estão como favoritos
-  const [favoriteIds, setFavoriteIds] = useState([]);
-
-  // Flag usada para forçar atualização da lista de favoritos
-  const [updateFav, setUpdateFav] = useState(false);
-
-  // Lista inicial de buscas recomendadas
-  const recommendedQueries = ["batman", "jujutsu", "spiderman"];
-
-  // Função para buscar filmes da API a partir de uma query
-  const fetchMovies = async (q) => {
-    setLoading(true); // ativa loading
-    setErr(""); // limpa erro
+  const fetchMovies = async () => {
+    // Função que realiza a requisição para buscar filmes
     try {
-      // Monta duas URLs para pegar até 2 páginas de resultados
-      const urls = [
-        `https://www.omdbapi.com/?s=${encodeURIComponent(
-          q
-        )}&type=movie&page=1&apikey=${API_KEY}`,
-        `https://www.omdbapi.com/?s=${encodeURIComponent(
-          q
-        )}&type=movie&page=2&apikey=${API_KEY}`,
-      ];
-
-      // Executa as duas requisições em paralelo
-      const [r1, r2] = await Promise.all(urls.map((u) => axios.get(u)));
-
-      // Pega listas de cada resposta
-      const list1 = r1.data.Search || [];
-      const list2 = r2.data.Search || [];
-
-      // Junta os resultados, remove duplicados pelo imdbID
-      const merged = [...list1, ...list2]
-        .filter((m) => m && m.imdbID)
-        .reduce(
-          (acc, item) =>
-            acc.some((x) => x.imdbID === item.imdbID) ? acc : acc.concat(item),
-          []
-        );
-
-      // Limita a 20 resultados
-      setMovies(merged.slice(0, 20));
+      setLoading(true);
+      // Marca como carregando enquanto busca os dados
+      const res = await fetch(API_URL);
+      // Faz a chamada HTTP para a API
+      const data = await res.json();
+      // Converte a resposta para JSON
+      if (data && data.Search) {
+        setMovies(data.Search);
+        // Se houver resultados, atualiza o estado movies
+      }
     } catch (e) {
-      // Se der erro na API
-      setErr("Falha ao carregar filmes. Tente novamente.");
+      // Em caso de erro, registra no console
+      console.error("Erro ao buscar filmes:", e);
     } finally {
-      // Desativa loading
       setLoading(false);
+      // Remove o estado de carregamento, garanta que spinner pare
     }
   };
 
-  // Carregar filmes recomendados ao abrir a tela (só 1x)
-  useEffect(() => {
-    const fetchRecommended = async () => {
-      setLoading(true);
-      let results = [];
+  const toggleFavorite = async (movie) => {
+    // Alterna o status de favorito de um filme (adiciona ou remove)
+    const isFav = await isFavorite(movie.imdbID);
+    // Consulta se já é favorito (lê do storage)
+    if (isFav) {
+      await removeFavoriteById(movie.imdbID);
+      // Se já era, remove do storage
+      setFavIds((prev) => prev.filter((id) => id !== movie.imdbID));
+      // Atualiza estado local removendo o id
+    } else {
+      await addFavorite(movie);
+      // Se não era favorito, adiciona ao storage
+      setFavIds((prev) => [...prev, movie.imdbID]);
+      // Atualiza estado local adicionando o id
+    }
+  };
 
-      // Para cada termo recomendado, busca na API
-      for (let q of recommendedQueries) {
-        try {
-          const res = await axios.get(
-            `https://www.omdbapi.com/?s=${q}&type=movie&page=1&apikey=${API_KEY}`
-          );
-          results = results.concat(res.data.Search || []);
-        } catch (e) {}
+  const checkFavorites = async (list) => {
+    // Verifica, para uma lista de filmes, quais já estão favoritados
+    const favStatus = [];
+    // Array temporário para armazenar ids favoritados
+    for (const movie of list) {
+      if (await isFavorite(movie.imdbID)) {
+        favStatus.push(movie.imdbID);
+        // Se o helper disser que é favorito, adiciona o id
       }
+    }
+    setFavIds(favStatus);
+    // Atualiza o estado com os ids que são favoritos
+  };
 
-      // Remove duplicados
-      const unique = results.filter(
-        (v, i, a) => a.findIndex((x) => x.imdbID === v.imdbID) === i
-      );
-
-      // Limita a 20 filmes
-      setMovies(unique.slice(0, 20));
-      setLoading(false);
-    };
-
-    // Executa assim que a tela for carregada
-    fetchRecommended();
+  useEffect(() => {
+    // Ao montar a tela, busca os filmes da API
+    fetchMovies();
   }, []);
 
-  // Sempre que a tela ganhar foco, recarrega os favoritos do AsyncStorage
-  useFocusEffect(
-    React.useCallback(() => {
-      const loadFavorites = async () => {
-        const favs = await AsyncStorage.getItem("favorites");
-        const favList = favs ? JSON.parse(favs) : [];
-
-        // Salva apenas os imdbID para fácil checagem
-        setFavoriteIds(favList.map((f) => f.imdbID));
-      };
-      loadFavorites();
-    }, [updateFav]) // depende de updateFav para atualizar sempre que mudar
-  );
-
-  // Alternar (adicionar/remover) favorito
-  const toggleFavorite = async (movie) => {
-    try {
-      // Carrega lista atual de favoritos
-      let favs = await AsyncStorage.getItem("favorites");
-      favs = favs ? JSON.parse(favs) : [];
-
-      // Se já é favorito, remove
-      if (favoriteIds.includes(movie.imdbID)) {
-        favs = favs.filter((f) => f.imdbID !== movie.imdbID);
-      } else {
-        // Se não é, adiciona
-        favs.push(movie);
-      }
-
-      // Salva no AsyncStorage
-      await AsyncStorage.setItem("favorites", JSON.stringify(favs));
-
-      // Força reload dos favoritos
-      setUpdateFav((prev) => !prev);
-    } catch (e) {
-      console.log("Erro ao atualizar favoritos", e);
+  useEffect(() => {
+    // Quando a lista de filmes muda, checa quais são favoritos
+    if (movies.length > 0) {
+      checkFavorites(movies);
     }
-  };
+  }, [movies]);
 
-  // Função chamada ao clicar no botão "Buscar"
-  const onSearch = () => {
-    if (query.trim()) fetchMovies(query.trim());
-  };
-
-  // Configurações do grid de filmes (3 colunas com espaçamento)
-  const numColumns = 3;
-  const spacing = 8;
-  const { width } = Dimensions.get("window");
-  const itemW = (width - (numColumns + 1) * spacing) / numColumns;
-
-  // Renderização de cada item do FlatList
-  const renderItem = ({ item }) => (
-    <View style={[styles.card, { width: itemW }]}>
-      {/* Pôster do filme */}
-      <Image
-        source={{
-          uri:
-            item.Poster && item.Poster !== "N/A"
-              ? item.Poster
-              : POSTER_FALLBACK, // fallback se não tiver imagem
-        }}
-        style={styles.poster}
-      />
-
-      {/* Botão para adicionar/remover favorito */}
-      <TouchableOpacity
-        style={styles.favoriteBtn}
-        onPress={() => toggleFavorite(item)}
-      >
-        {/* Ícone estrela (preenchida se for favorito) */}
-        <Ionicons
-          name={favoriteIds.includes(item.imdbID) ? "star" : "star-outline"}
-          size={24}
-          color="#ffd700"
-        />
-      </TouchableOpacity>
-
-      {/* Título do filme (2 linhas máx.) */}
-      <Text numberOfLines={2} style={styles.caption}>
-        {item.Title}
-      </Text>
-
-      {/* Ano do filme */}
-      <Text style={styles.year}>{item.Year}</Text>
-    </View>
-  );
-
-  // UI principal
-  return (
-    <View style={styles.container}>
-      {/* Área de busca */}
-      <View style={styles.searchRow}>
-        <TextInput
-          placeholder="Buscar (ex: marvel, batman, star)..."
-          placeholderTextColor="#888"
-          value={query}
-          onChangeText={setQuery}
-          style={styles.input}
-          autoCapitalize="none"
-        />
-        <TouchableOpacity style={styles.searchBtn} onPress={onSearch}>
-          <Text style={styles.searchBtnText}>Buscar</Text>
-        </TouchableOpacity>
+  if (loading) {
+    // Enquanto estiver carregando, retorna uma tela centralizada com spinner
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#000" />
+        <TextComp variant="body">Carregando filmes...</TextComp>
       </View>
+    );
+  }
 
-      {/* Exibir carregando, erro ou lista */}
-      {loading ? (
-        // Enquanto carrega -> spinner centralizado
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" />
-        </View>
-      ) : err ? (
-        // Se houver erro -> mensagem e botão tentar novamente
-        <View style={{ padding: 16 }}>
-          <Text style={{ color: "#fff", textAlign: "center" }}>{err}</Text>
-          <TouchableOpacity
-            style={[styles.searchBtn, { alignSelf: "center", marginTop: 12 }]}
-            onPress={onSearch}
-          >
-            <Text style={styles.searchBtnText}>Tentar novamente</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        // Se tudo certo -> renderiza lista de filmes
-        <FlatList
-          data={movies}
-          keyExtractor={(item) => item.imdbID}
-          renderItem={renderItem}
-          numColumns={numColumns}
-          columnWrapperStyle={{ gap: spacing, marginBottom: spacing }}
-          contentContainerStyle={{ padding: spacing }}
-        />
-      )}
+  return (
+    // JSX principal da tela quando não está carregando
+    <View style={styles.container}>
+      <TextComp variant="title" style={styles.title}>
+        Galeria de Filmes
+      </TextComp>
+      <FlatList
+        data={movies} // dados vindos da API
+        keyExtractor={(item) => item.imdbID} // chave única por item
+        renderItem={({ item }) => {
+          // Para cada filme, decide se está favoritado e exibe MovieCard
+          const isFav = favIds.includes(item.imdbID);
+          return (
+            <MovieCard
+              movie={item}
+              rightContent={
+                // Botão de favoritar/desfavoritar
+                <TouchableOpacity
+                  style={[styles.favBtn, isFav && styles.favActive]}
+                  onPress={() => toggleFavorite(item)} // alterna favorito ao pressionar
+                >
+                  <TextComp color="#fff">{isFav ? "★" : "☆"}</TextComp>
+                </TouchableOpacity>
+              }
+            />
+          );
+        }}
+      />
     </View>
   );
-}
+};
 
-// Cor primária usada em botões
-const PRIMARY = "#6C3BF4";
-
-// Estilos
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0E0E10" },
-
-  // Linha de busca
-  searchRow: { flexDirection: "row", padding: 12, gap: 8 },
-
-  // Campo de input
-  input: {
+  // Estilos da galeria
+  container: {
     flex: 1,
-    backgroundColor: "#1a1a1e",
-    color: "#fff",
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    height: 44,
-    borderWidth: 1,
-    borderColor: "#2a2a30",
+    backgroundColor: "#f5f5f5",
+    paddingTop: 20,
   },
-
-  // Botão de buscar
-  searchBtn: {
-    backgroundColor: PRIMARY,
-    paddingHorizontal: 14,
+  title: {
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  center: {
+    // Estilo usado quando está carregando (spinner)
+    flex: 1,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
   },
-  searchBtnText: { color: "#fff", fontWeight: "700" },
-
-  // Card de cada filme
-  card: { backgroundColor: "#121217", borderRadius: 12, overflow: "hidden" },
-
-  // Pôster com proporção 2:3
-  poster: { width: "100%", aspectRatio: 2 / 3 },
-
-  // Texto do título
-  caption: { color: "#fff", fontSize: 12, paddingHorizontal: 8, paddingTop: 6 },
-
-  // Ano do filme
-  year: { color: "#aaa", fontSize: 11, paddingHorizontal: 8, paddingBottom: 8 },
-
-  // Botão estrela de favorito
-  favoriteBtn: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 4,
-    borderRadius: 12,
+  favBtn: {
+    // Estilo do botão de favorito (estado padrão)
+    backgroundColor: "#3498db",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  favActive: {
+    // Estilo aplicado quando o item está favoritado
+    backgroundColor: "#f1c40f",
   },
 });
+
+export default Gallery;
+// Exporta a tela como default

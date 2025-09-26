@@ -1,152 +1,94 @@
-// Importa React e hook useState para estados internos do componente
+// src/Pages/Login.js
+// Tela de login simples: salva username e marca usuário como logado.
+
 import React, { useState } from "react";
+// Importa React e hook useState para controlar o input
 
-// Importa componentes do React Native para UI e interação
-import {
-  View, // Container básico
-  Text, // Para exibir textos
-  TextInput, // Para inputs de usuário e senha
-  TouchableOpacity, // Botões clicáveis
-  StyleSheet, // Para criar estilos
-  Alert, // Para mostrar alertas de erro
-  KeyboardAvoidingView, // Ajusta layout quando o teclado aparece
-  Platform, // Detecta plataforma (iOS/Android)
-} from "react-native";
+import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
+// Importa View, StyleSheet, TouchableOpacity (botão) e Alert para mensagens
 
-// AsyncStorage para salvar dados locais (sessão do usuário)
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import TextComp from "../components/TextComp";
+// Componente de texto padronizado
 
-// Componente funcional Login
-export default function Login({ navigation }) {
-  // Estado para armazenar o nome do usuário digitado
-  const [user, setUser] = useState("");
+import InputComp from "../components/InputComp";
+// Campo de input reutilizável
 
-  // Estado para armazenar a senha digitada
-  const [pass, setPass] = useState("");
+import { setUsername, setLogged } from "../components/AsyncStorage";
+// Helpers para salvar username e sinalizar que o usuário está logado
 
-  // Estado que indica se o login está em andamento (loading)
-  const [loading, setLoading] = useState(false);
+import { useNavigation } from "@react-navigation/native";
+// Hook de navegação para redirecionar após login
 
-  // Função executada quando o usuário clica no botão "Entrar"
+const Login = () => {
+  // Componente funcional da tela de Login
+  const [username, setUser] = useState("");
+  // Estado que armazena o valor do input do usuário
+
+  const navigation = useNavigation();
+  // Obtém objeto de navegação
+
   const handleLogin = async () => {
-    // Se o usuário ou senha estiverem vazios, mostra alerta
-    if (!user || !pass) {
-      Alert.alert("Ops", "Preencha usuário e senha.");
-      return; // Interrompe a execução da função
+    // Função chamada ao pressionar "Entrar"
+    if (!username.trim()) {
+      // Verifica se o campo não está vazio (retirando espaços)
+      Alert.alert("Erro", "Digite um nome de usuário.");
+      // Mostra um alerta caso esteja vazio e interrompe
+      return;
     }
 
-    // Ativa o estado de carregamento
-    setLoading(true);
+    await setUsername(username);
+    // Salva o username no AsyncStorage customizado
 
-    try {
-      // Salva no AsyncStorage que o usuário está logado
-      await AsyncStorage.setItem("@cinegallery:logged", "true");
+    await setLogged(true);
+    // Marca que o usuário está logado
 
-      // Salva o nome do usuário no AsyncStorage
-      await AsyncStorage.setItem("@cinegallery:username", user);
-
-      // Navega para MainTabs e reseta histórico para não permitir voltar ao login
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "MainTabs" }],
-      });
-    } catch (e) {
-      // Se ocorrer erro ao salvar a sessão, mostra alerta
-      Alert.alert("Erro", "Não foi possível salvar a sessão.");
-    } finally {
-      // Desativa o carregamento, independente do resultado
-      setLoading(false);
-    }
+    navigation.replace("Home");
+    // Navega para a tela Home substituindo a atual (sem voltar)
   };
 
-  // JSX: layout da tela de login
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      {/* Ajusta posição dos inputs quando o teclado aparece (somente iOS) */}
+    // JSX da tela de login
+    <View style={styles.container}>
+      <TextComp variant="title" style={styles.title}>
+        CineGallery
+      </TextComp>
 
-      {/* Título do app */}
-      <Text style={styles.title}>CineGallery</Text>
-
-      {/* Subtítulo explicativo */}
-      <Text style={styles.subtitle}>Entre para ver os filmes populares</Text>
-
-      {/* Input do usuário */}
-      <TextInput
-        value={user} // Valor do input
-        onChangeText={setUser} // Atualiza estado ao digitar
-        placeholder="Usuário" // Texto placeholder
-        placeholderTextColor="#888" // Cor do placeholder
-        autoCapitalize="none" // Não capitaliza automaticamente
-        style={styles.input} // Aplica estilo
+      <InputComp
+        placeholder="Digite seu nome de usuário"
+        value={username}
+        onChangeText={setUser}
+        // Input controlado: value e onChangeText atualizam o estado
       />
 
-      {/* Input da senha */}
-      <TextInput
-        value={pass} // Valor do input
-        onChangeText={setPass} // Atualiza estado ao digitar
-        placeholder="Senha" // Placeholder
-        placeholderTextColor="#888"
-        secureTextEntry // Oculta a senha
-        style={styles.input}
-      />
-
-      {/* Botão de login */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleLogin} // Chama função ao clicar
-        disabled={loading} // Desativa botão se estiver carregando
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Entrando..." : "Entrar"}{" "}
-          {/* Texto muda conforme loading */}
-        </Text>
+      <TouchableOpacity style={styles.btn} onPress={handleLogin}>
+        <TextComp color="#fff">Entrar</TextComp>
       </TouchableOpacity>
-    </KeyboardAvoidingView>
+    </View>
   );
-}
+};
 
-// Cor primária usada nos botões
-const PRIMARY = "#6C3BF4";
-
-// Estilos da tela
 const styles = StyleSheet.create({
+  // Estilos do Login
   container: {
-    flex: 1, // Ocupa toda a tela
-    backgroundColor: "#0E0E10",
-    padding: 24,
-    justifyContent: "center", // Centraliza verticalmente
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#fff",
-    marginBottom: 4,
-    textAlign: "center",
+    marginBottom: 20,
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#aaa",
-    marginBottom: 24,
-    textAlign: "center",
+  btn: {
+    marginTop: 15,
+    backgroundColor: "#2ecc71",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
   },
-  input: {
-    backgroundColor: "#1a1a1e",
-    color: "#fff",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#2a2a30",
-  },
-  button: {
-    backgroundColor: PRIMARY,
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center", // Centraliza texto horizontalmente
-    marginTop: 8,
-  },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
+
+export default Login;
+// Exporta o componente Login

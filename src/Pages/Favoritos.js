@@ -1,122 +1,107 @@
-// Importando React e o hook useState para controlar estado interno do componente
-import React, { useState } from "react";
+// src/Pages/Favoritos.js
+// Tela que lista os filmes salvos como favoritos e permite removê-los.
 
-// Importando componentes básicos do React Native
-import {
-  View, // container básico para estruturar layouts
-  Text, // exibir textos
-  FlatList, // lista performática para exibir filmes
-  Image, // carregar e exibir imagens (pôster dos filmes)
-  TouchableOpacity, // botão clicável (no caso, usado para "Remover")
-  StyleSheet, // criar estilos CSS-in-JS
-} from "react-native";
+import React, { useEffect, useState } from "react";
+// Importa React e hooks: useEffect para efeitos colaterais e useState para estado local.
 
-// Importando AsyncStorage para salvar/buscar/remover favoritos localmente
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+// Importa componentes do RN:
+// View -> container básico
+// FlatList -> lista performática para arrays
+// StyleSheet -> utilitário para estilos
+// TouchableOpacity -> botão com feedback de opacidade
 
-// Importando useFocusEffect (executa uma função sempre que a tela entra em foco)
-import { useFocusEffect } from "@react-navigation/native";
+import TextComp from "../components/TextComp";
+// Importa componente de texto padrão (para títulos/corpo)
 
-// Componente principal da tela de favoritos
-export default function Favorites() {
-  // Hook de estado para armazenar a lista de filmes favoritos
+import MovieCard from "../components/MovieCard";
+// Importa componente comum que renderiza um card de filme
+
+import { getFavorites, removeFavoriteById } from "../components/AsyncStorage";
+// Importa helpers do AsyncStorage customizado: buscar e remover favoritos
+
+const Favoritos = () => {
+  // Componente funcional da tela Favoritos
   const [favorites, setFavorites] = useState([]);
+  // Estado local que guarda a lista de favoritos (inicia vazia)
 
-  // Sempre que a tela "Favorites" for aberta ou voltar ao foco,
-  // recarregar os favoritos do AsyncStorage
-  useFocusEffect(
-    React.useCallback(() => {
-      const loadFavorites = async () => {
-        // Buscar do AsyncStorage a chave "favorites"
-        const favs = await AsyncStorage.getItem("favorites");
-
-        // Se existir algo, transforma de JSON em array e salva no estado
-        // Se não existir, salva um array vazio
-        setFavorites(favs ? JSON.parse(favs) : []);
-      };
-
-      // Executa a função de carregar favoritos
-      loadFavorites();
-    }, []) // [] significa que o efeito não depende de nada além do foco da tela
-  );
-
-  // Função para remover um filme da lista de favoritos
-  const removeFavorite = async (id) => {
-    // Cria uma nova lista sem o item cujo imdbID seja igual ao clicado
-    const newFavorites = favorites.filter((item) => item.imdbID !== id);
-
-    // Atualiza o estado local com a nova lista
-    setFavorites(newFavorites);
-
-    // Salva a lista atualizada no AsyncStorage
-    await AsyncStorage.setItem("favorites", JSON.stringify(newFavorites));
+  const loadFavorites = async () => {
+    // Função que carrega os favoritos do armazenamento e atualiza o estado
+    const favs = await getFavorites();
+    // Chama o helper para obter a lista (retorna array ou [])
+    setFavorites(favs);
+    // Atualiza o estado com os favoritos carregados
   };
 
-  // JSX (UI) que será renderizado na tela
+  const handleRemove = async (id) => {
+    // Função chamada ao pressionar "Remover" para excluir um favorito
+    await removeFavoriteById(id);
+    // Remove do armazenamento pelo imdbID
+    loadFavorites();
+    // Recarrega a lista para refletir a alteração na UI
+  };
+
+  useEffect(() => {
+    // useEffect que roda ao montar o componente (com array de dependências vazio)
+    loadFavorites();
+    // Carrega os favoritos uma única vez quando a tela é exibida
+  }, []);
+
   return (
+    // JSX retornado pela tela
     <View style={styles.container}>
       {/* Título da tela */}
-      <Text style={styles.title}>⭐ Meus Favoritos</Text>
+      <TextComp variant="title">Meus Favoritos</TextComp>
 
-      {/* FlatList exibe a lista de filmes favoritos */}
-      <FlatList
-        data={favorites} // Fonte de dados
-        keyExtractor={(item) => item.imdbID} // Cada item é identificado pelo imdbID
-        renderItem={(
-          { item } // Renderização de cada filme
-        ) => (
-          <View style={styles.card}>
-            {/* Pôster do filme */}
-            <Image source={{ uri: item.Poster }} style={styles.poster} />
-
-            {/* Área com informações e botão remover */}
-            <View style={styles.info}>
-              <Text style={styles.movieTitle}>{item.Title}</Text>
-
-              {/* Botão para remover dos favoritos */}
-              <TouchableOpacity onPress={() => removeFavorite(item.imdbID)}>
-                <Text style={styles.remove}>Remover</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      />
+      {favorites.length === 0 ? (
+        // Se não houver favoritos, mostra uma mensagem vazia
+        <TextComp variant="body" style={styles.empty}>
+          Nenhum filme favorito ainda.
+        </TextComp>
+      ) : (
+        // Caso contrário, renderiza a FlatList com os favoritos
+        <FlatList
+          data={favorites} // dados da lista
+          keyExtractor={(item) => item.imdbID} // chave única por item
+          renderItem={({ item }) => (
+            // Para cada item, renderiza um MovieCard com um botão de remover
+            <MovieCard
+              movie={item}
+              rightContent={
+                // Botão de remover posicionado à direita do card
+                <TouchableOpacity
+                  style={styles.removeBtn}
+                  onPress={() => handleRemove(item.imdbID)}
+                >
+                  <TextComp color="#fff">Remover</TextComp>
+                </TouchableOpacity>
+              }
+            />
+          )}
+        />
+      )}
     </View>
   );
-}
+};
 
-// Estilos da tela
 const styles = StyleSheet.create({
-  // Container principal da tela
-  container: { flex: 1, backgroundColor: "#1a1a2e", padding: 10 },
-
-  // Estilo do título
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 10,
-    textAlign: "center",
+  // Estilos do componente Favoritos
+  container: {
+    flex: 1, // ocupa toda a tela
+    paddingTop: 20,
+    backgroundColor: "#f5f5f5",
   },
-
-  // Card de cada filme
-  card: {
-    flexDirection: "row", // Alinha pôster e informações lado a lado
-    backgroundColor: "#2d2d44",
-    borderRadius: 10,
-    marginBottom: 10,
-    overflow: "hidden", // Garante que a borda arredondada "corta" a imagem
+  empty: {
+    textAlign: "center", // centraliza o texto
+    marginTop: 40,
   },
-
-  // Pôster do filme
-  poster: { width: 100, height: 150 },
-
-  // Área de informações do filme
-  info: { flex: 1, padding: 10 },
-
-  // Título do filme
-  movieTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-
-  // Botão de remover
-  remove: { color: "#e74c3c", marginTop: 5 },
+  removeBtn: {
+    backgroundColor: "#e74c3c", // vermelho para ação de deletar
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
 });
+
+export default Favoritos;
+// Exporta o componente como default
